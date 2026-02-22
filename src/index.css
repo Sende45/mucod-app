@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+@theme {
+  /* Tes couleurs personnalisées vont ici */
+  --color-primary: #3b82f6;
+  --color-secondary: #ef4444;
+  
+  /* Tes breakpoints ou polices aussi */
+  --font-display: "Inter", sans-serif;
+}
