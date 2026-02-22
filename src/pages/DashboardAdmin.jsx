@@ -1,13 +1,15 @@
 // src/pages/DashboardAdmin.jsx
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { db } from '../firebase'; 
+import { db, functions } from '../firebase'; // Import de functions ajouté
 import { collection, onSnapshot, query, orderBy, doc, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions'; // Import pour appeler le backend
 import { 
   Users, Wallet, Search, MoreVertical, 
   CheckCircle, Download, Loader2, Clock, Phone, Eye,
-  AlertCircle, MessageSquare, X, ShieldCheck, Star, Briefcase, Edit2
+  AlertCircle, MessageSquare, X, ShieldCheck, Star, Briefcase, Edit2, CreditCard
 } from 'lucide-react';
+import PaymentModal from '../components/PaymentModal'; // Import du nouveau composant
 
 const DashboardAdmin = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -16,7 +18,11 @@ const DashboardAdmin = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('membres'); 
   const [showAddUserModal, setShowAddUserModal] = useState(false);
-  const [editingUser, setEditingUser] = useState(null); // AJOUT : État pour le membre en cours d'édition
+  const [editingUser, setEditingUser] = useState(null);
+  
+  // Nouveaux états pour Stripe
+  const [payTargetUser, setPayTargetUser] = useState(null); 
+  const [isPayModalOpen, setIsPayModalOpen] = useState(false);
 
   // --- RÉCUPÉRATION DES DONNÉES ---
   useEffect(() => {
@@ -36,7 +42,7 @@ const DashboardAdmin = () => {
     return () => { unsubUsers(); unsubDeces(); };
   }, []);
 
-  // --- ACTION : AJOUTER ---
+  // --- ACTIONS EXISTANTES ---
   const handleAddUser = async (e) => {
     e.preventDefault();
     const f = new FormData(e.target);
@@ -57,7 +63,6 @@ const DashboardAdmin = () => {
     }
   };
 
-  // --- AJOUT : ACTION MODIFIER ---
   const handleUpdateUser = async (e) => {
     e.preventDefault();
     const f = new FormData(e.target);
@@ -113,6 +118,20 @@ const DashboardAdmin = () => {
   return (
     <div className="min-h-screen bg-slate-50 flex">
       
+      {/* --- MODAL PAIEMENT STRIPE (NOUVEAU) --- */}
+      {payTargetUser && (
+        <PaymentModal 
+          isOpen={isPayModalOpen}
+          amount={2000} // Montant fixe de cotisation par exemple
+          onClose={() => { setIsPayModalOpen(false); setPayTargetUser(null); }}
+          onSuccess={() => {
+            setIsPayModalOpen(false);
+            setPayTargetUser(null);
+            alert("Cotisation enregistrée !");
+          }}
+        />
+      )}
+
       {/* --- MODAL AJOUTER UN ADHÉRENT --- */}
       <AnimatePresence>
         {showAddUserModal && (
@@ -146,7 +165,7 @@ const DashboardAdmin = () => {
         )}
       </AnimatePresence>
 
-      {/* --- AJOUT : MODAL MODIFIER UN ADHÉRENT --- */}
+      {/* --- MODAL MODIFIER UN ADHÉRENT --- */}
       <AnimatePresence>
         {editingUser && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm">
@@ -269,8 +288,17 @@ const DashboardAdmin = () => {
                         </td>
                         <td className="px-8 py-6 text-right">
                           <div className="flex justify-end gap-2">
+                            {/* NOUVEAU BOUTON : PAIEMENT */}
+                            <button 
+                              onClick={() => { setPayTargetUser(m); setIsPayModalOpen(true); }}
+                              className="p-2 bg-emerald-50 hover:bg-emerald-600 hover:text-white rounded-xl transition-all text-emerald-600 cursor-pointer"
+                              title="Encaisser cotisation"
+                            >
+                              <CreditCard size={16} />
+                            </button>
+
                             {m.status !== 'À jour' && <button onClick={() => handleApprove(m.id)} className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-black hover:bg-slate-900 transition-all cursor-pointer">Valider</button>}
-                            {/* BOUTON MODIFIER - Utilise setEditingUser(m) pour ouvrir le modal */}
+                            
                             <button onClick={() => setEditingUser(m)} className="p-2 bg-slate-100 hover:bg-blue-600 hover:text-white rounded-xl transition-all text-slate-500 cursor-pointer">
                               <Edit2 size={16} />
                             </button>
