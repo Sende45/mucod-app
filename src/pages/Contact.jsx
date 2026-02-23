@@ -1,6 +1,6 @@
-// src/pages/Contact.jsx
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
+import emailjs from '@emailjs/browser';
 import { 
   Mail, 
   Phone, 
@@ -8,10 +8,39 @@ import {
   Send, 
   Clock, 
   MessageSquare,
-  ArrowUpRight
+  Loader2,
+  CheckCircle
 } from 'lucide-react';
 
 const Contact = () => {
+  // --- LOGIQUE D'ENVOI EMAILJS ---
+  const formRef = useRef();
+  const [isSending, setIsSending] = useState(false);
+  const [isSent, setIsSent] = useState(false);
+
+  const sendEmail = (e) => {
+    e.preventDefault();
+    setIsSending(true);
+
+    // Identifiants complets configurés
+    const SERVICE_ID = "service_kb8ckvr"; 
+    const TEMPLATE_ID = "template_82eungf"; 
+    const PUBLIC_KEY = "xX6MHYJpo5d9EY7MK"; 
+
+    emailjs.sendForm(SERVICE_ID, TEMPLATE_ID, formRef.current, PUBLIC_KEY)
+      .then(() => {
+        setIsSent(true);
+        setIsSending(false);
+        formRef.current.reset();
+        // Le bouton redevient bleu après 5 secondes
+        setTimeout(() => setIsSent(false), 5000);
+      }, (error) => {
+        console.error("Erreur EmailJS:", error.text);
+        alert("Une erreur est survenue lors de l'envoi.");
+        setIsSending(false);
+      });
+  };
+
   const contactInfo = [
     {
       title: "Appelez-nous",
@@ -103,11 +132,13 @@ const Contact = () => {
               <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Envoyez-nous un message</h2>
             </div>
 
-            <form className="grid md:grid-cols-2 gap-6">
+            <form ref={formRef} onSubmit={sendEmail} className="grid md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-bold text-slate-700 ml-1 italic">Nom complet</label>
                 <input 
                   type="text" 
+                  name="name" 
+                  required
                   placeholder="Jean Dupont"
                   className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 focus:outline-none focus:border-blue-500 focus:bg-white transition-all"
                 />
@@ -116,22 +147,26 @@ const Contact = () => {
                 <label className="text-sm font-bold text-slate-700 ml-1 italic">Email</label>
                 <input 
                   type="email" 
+                  name="email" 
+                  required
                   placeholder="jean@exemple.com"
                   className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 focus:outline-none focus:border-blue-500 focus:bg-white transition-all"
                 />
               </div>
               <div className="md:col-span-2 space-y-2">
                 <label className="text-sm font-bold text-slate-700 ml-1 italic">Sujet</label>
-                <select className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 focus:outline-none focus:border-blue-500 focus:bg-white transition-all appearance-none">
-                  <option>Information sur l'adhésion</option>
-                  <option>Problème de cotisation</option>
-                  <option>Déclaration de sinistre</option>
-                  <option>Autre demande</option>
+                <select name="subject" className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 focus:outline-none focus:border-blue-500 focus:bg-white transition-all appearance-none">
+                  <option value="Information adhésion">Information sur l'adhésion</option>
+                  <option value="Problème cotisation">Problème de cotisation</option>
+                  <option value="Déclaration sinistre">Déclaration de sinistre</option>
+                  <option value="Autre demande">Autre demande</option>
                 </select>
               </div>
               <div className="md:col-span-2 space-y-2">
                 <label className="text-sm font-bold text-slate-700 ml-1 italic">Votre message</label>
                 <textarea 
+                  name="message" 
+                  required
                   rows="5"
                   placeholder="Comment pouvons-nous vous aider ?"
                   className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 focus:outline-none focus:border-blue-500 focus:bg-white transition-all resize-none"
@@ -139,9 +174,20 @@ const Contact = () => {
               </div>
               
               <div className="md:col-span-2 pt-4">
-                <button className="w-full md:w-auto flex items-center justify-center gap-3 bg-blue-600 hover:bg-slate-900 text-white font-black px-10 py-5 rounded-2xl shadow-xl shadow-blue-200 transition-all active:scale-95 cursor-pointer">
-                  <Send size={20} />
-                  Envoyer ma demande
+                <button 
+                  type="submit"
+                  disabled={isSending}
+                  className={`w-full md:w-auto flex items-center justify-center gap-3 font-black px-10 py-5 rounded-2xl shadow-xl transition-all active:scale-95 cursor-pointer 
+                    ${isSent ? 'bg-emerald-500 text-white shadow-emerald-200' : 'bg-blue-600 hover:bg-slate-900 text-white shadow-blue-200'}`}
+                >
+                  {isSending ? (
+                    <Loader2 className="animate-spin" size={20} />
+                  ) : isSent ? (
+                    <CheckCircle size={20} />
+                  ) : (
+                    <Send size={20} />
+                  )}
+                  {isSending ? "Envoi en cours..." : isSent ? "Message envoyé !" : "Envoyer ma demande"}
                 </button>
               </div>
             </form>
