@@ -1,5 +1,5 @@
 // src/pages/Services.jsx
-import React from 'react';
+import React, { useState } from 'react'; // Import de useState ajouté
 import { motion } from 'framer-motion';
 import { 
   Users, 
@@ -9,10 +9,19 @@ import {
   CreditCard, 
   Gem,
   ArrowRight,
-  LifeBuoy
+  LifeBuoy,
+  CheckCircle2 // Import ajouté pour le pricing
 } from 'lucide-react';
 
+// Imports pour le paiement
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import PaymentModal from '../components/PaymentModal'; 
+
 const Services = () => {
+  // États pour gérer le modal de paiement
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedAmount, setSelectedAmount] = useState(0);
+
   const allServices = [
     {
       title: "Prévoyance Collective",
@@ -39,6 +48,12 @@ const Services = () => {
       features: ["Déclaration en ligne", "Paiement mobile", "Suivi en temps réel"]
     }
   ];
+
+  // Fonction pour ouvrir le modal avec le bon montant
+  const openPayment = (amount) => {
+    setSelectedAmount(amount);
+    setIsModalOpen(true);
+  };
 
   return (
     <div className="bg-slate-50 min-h-screen">
@@ -102,7 +117,56 @@ const Services = () => {
         </div>
       </section>
 
-      {/* --- PRICING PREVIEW (Optionnel) --- */}
+      {/* --- NOUVELLE SECTION : GRILLE DE PAIEMENT / ABONNEMENT --- */}
+      <section className="max-w-7xl mx-auto px-6 py-20 border-t border-slate-100">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl md:text-5xl font-black text-slate-900 mb-4">Adhésion & Cotisations</h2>
+          <p className="text-slate-500">Sélectionnez votre plan pour activer votre couverture immédiatement</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {[
+            { name: "Membre Individuel", price: 5000, desc: "Pour une personne seule" },
+            { name: "Couple", price: 8000, desc: "Protection pour vous et votre conjoint" },
+            { name: "Famille Plus", price: 15000, desc: "Couverture complète (enfants inclus)" }
+          ].map((plan, i) => (
+            <motion.div 
+              key={i}
+              whileHover={{ y: -10 }}
+              className="bg-white border-2 border-slate-100 p-8 rounded-[3rem] shadow-sm hover:border-blue-500 transition-all flex flex-col"
+            >
+              <h3 className="text-xl font-extrabold text-slate-900 mb-2">{plan.name}</h3>
+              <p className="text-slate-400 text-sm mb-6">{plan.desc}</p>
+              
+              <div className="text-4xl font-black text-slate-900 mb-8">
+                {plan.price.toLocaleString()} <span className="text-sm font-bold text-slate-400">FCFA</span>
+              </div>
+
+              <ul className="space-y-4 mb-10 flex-grow">
+                <li className="flex items-center gap-3 text-sm font-bold text-slate-700">
+                  <CheckCircle2 size={18} className="text-emerald-500" /> Prise en charge 100%
+                </li>
+                <li className="flex items-center gap-3 text-sm font-bold text-slate-700">
+                  <CheckCircle2 size={18} className="text-emerald-500" /> Accès à la cellule psychologique
+                </li>
+                <li className="flex items-center gap-3 text-sm font-bold text-slate-700">
+                  <CheckCircle2 size={18} className="text-emerald-500" /> Assistance 24h/7
+                </li>
+              </ul>
+
+              <button 
+                onClick={() => openPayment(plan.price)}
+                className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black hover:bg-blue-600 transition-all flex justify-center items-center gap-2"
+              >
+                Adhérer maintenant
+                <ArrowRight size={18} />
+              </button>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* --- PRICING PREVIEW (Original) --- */}
       <section className="max-w-5xl mx-auto px-6 pb-32">
         <div className="bg-slate-900 rounded-[3rem] p-10 md:p-16 text-center text-white relative overflow-hidden">
           <div className="relative z-10">
@@ -119,6 +183,17 @@ const Services = () => {
           <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/20 blur-[100px] -translate-y-1/2 translate-x-1/2" />
         </div>
       </section>
+
+      {/* --- MODAL DE PAIEMENT --- */}
+      <PaymentModal 
+        isOpen={isModalOpen}
+        amount={selectedAmount}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={() => {
+          setIsModalOpen(false);
+          // Optionnel : Rediriger ou afficher un message de succès global
+        }}
+      />
     </div>
   );
 };
