@@ -231,7 +231,11 @@ const Home = () => {
                 Déclaration en ligne simplifiée et fonds débloqués en un temps record.
               </p>
               <div className="flex flex-wrap gap-4 font-bold">
-                <button className="flex items-center gap-3 bg-white text-slate-900 px-10 py-5 rounded-2xl hover:scale-105 transition-all cursor-pointer shadow-xl">
+                {/* BOUTON DÉCLARER UN DÉCÈS LIÉ AU COMPOSANT DeathDeclarationForm */}
+                <button 
+                  onClick={() => navigate('/declarer-deces')} 
+                  className="flex items-center gap-3 bg-white text-slate-900 px-10 py-5 rounded-2xl hover:scale-105 transition-all cursor-pointer shadow-xl"
+                >
                   <HeartHandshake size={20}/>
                   Déclarer un décès
                 </button>
@@ -245,14 +249,14 @@ const Home = () => {
             </div>
             
             <div className="flex justify-center items-center">
-               <div className="relative w-72 h-72 md:w-96 md:h-96">
-                  <div className="absolute inset-0 border-2 border-dashed border-blue-500/30 rounded-full animate-[spin_30s_linear_infinite]" />
-                  <div className="absolute inset-10 border border-slate-700 rounded-full animate-[spin_20s_linear_infinite_reverse]" />
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <ShieldCheck className="text-blue-500 drop-shadow-[0_0_30px_rgba(37,99,235,0.4)]" size={120} />
-                    <span className="mt-4 font-black text-2xl tracking-tighter">MUCOD SECURE</span>
-                  </div>
-               </div>
+                <div className="relative w-72 h-72 md:w-96 md:h-96">
+                   <div className="absolute inset-0 border-2 border-dashed border-blue-500/30 rounded-full animate-[spin_30s_linear_infinite]" />
+                   <div className="absolute inset-10 border border-slate-700 rounded-full animate-[spin_20s_linear_infinite_reverse]" />
+                   <div className="absolute inset-0 flex flex-col items-center justify-center">
+                     <ShieldCheck className="text-blue-500 drop-shadow-[0_0_30px_rgba(37,99,235,0.4)]" size={120} />
+                     <span className="mt-4 font-black text-2xl tracking-tighter">MUCOD SECURE</span>
+                   </div>
+                </div>
             </div>
           </div>
         </motion.div>

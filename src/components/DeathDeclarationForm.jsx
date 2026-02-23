@@ -74,3 +74,5 @@ const DeathDeclarationForm = ({ closeModal }) => {
     </form>
   );
 };
+
+export default DeathDeclarationForm;

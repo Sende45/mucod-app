@@ -10,7 +10,7 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 
-// Importation des pages
+// Importation des pages et composants de formulaires
 import Home from './pages/Home';
 import Services from './pages/Services';
 import Solidarite from './pages/Solidarite';
@@ -19,12 +19,10 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import DashboardAdmin from './pages/DashboardAdmin';
+import DeathDeclarationForm from './components/DeathDeclarationForm'; // Importation du formulaire
 
 function App() {
   return (
-    /* L'AuthProvider doit être TOUT en haut pour que 
-      le Header et les Pages puissent savoir qui est connecté.
-    */
     <AuthProvider>
       <Router>
         <div className="min-h-screen flex flex-col bg-slate-50">
@@ -32,10 +30,7 @@ function App() {
           {/* Le Header reste fixe en haut */}
           <Header />
 
-          {/* pt-24 compense la hauteur du header fixe. 
-              Si ta page est blanche, vérifie aussi que tes composants 
-              pages (Home, Login, etc.) exportent bien "default".
-          */}
+          {/* Le main avec padding pour compenser le header fixe */}
           <main className="flex-grow pt-24 md:pt-28">
             <Routes>
               <Route path="/" element={<Home />} />
@@ -43,22 +38,25 @@ function App() {
               <Route path="/solidarite" element={<Solidarite />} />
               <Route path="/contact" element={<Contact />} />
               
-              {/* Nouvelles routes d'authentification */}
+              {/* Route pour la déclaration de décès (liée au bouton de la Home) */}
+              <Route path="/declarer-deces" element={<DeathDeclarationForm />} />
+              
+              {/* Routes d'authentification et utilisateur */}
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/dashboard" element={<Dashboard />} />
-              // Dans App.jsx
+              
+              {/* Route Admin protégée */}
               <Route 
                 path="/admin" 
                 element={
-                <ProtectedRoute>
-                {/* Tu pourras ajouter ici une vérification if(user.email === 'admin@mucod.ci') */}
-                <DashboardAdmin />
-                </ProtectedRoute>
+                  <ProtectedRoute>
+                    <DashboardAdmin />
+                  </ProtectedRoute>
                 } 
               /> 
               
-              {/* Route de secours (404) si tu tapes n'importe quoi */}
+              {/* Route de secours (404) redirigeant vers l'accueil */}
               <Route path="*" element={<Home />} />
             </Routes>
           </main>
