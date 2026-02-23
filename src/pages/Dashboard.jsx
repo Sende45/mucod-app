@@ -13,7 +13,7 @@ const Dashboard = () => {
   const { user } = useAuth();
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showDeathForm, setShowDeathForm] = useState(false); // État pour le formulaire
+  const [showDeathForm, setShowDeathForm] = useState(false);
   const [declarationLoading, setDeclarationLoading] = useState(false);
 
   // --- RÉCUPÉRATION DES DONNÉES FIRESTORE ---
@@ -36,19 +36,37 @@ const Dashboard = () => {
     fetchUserData();
   }, [user]);
 
+  // --- NOUVELLE FONCTION : REMPLISSAGE AUTO DU NOM ---
+  const handleSelectChange = (e) => {
+    const selectedValue = e.target.value;
+    if (selectedValue && selectedValue !== "Autre") {
+      // On récupère la partie avant le '|' (le nom)
+      const namePart = selectedValue.split('|')[0];
+      // On l'injecte directement dans le champ input 'nom'
+      const nameInput = document.getElementsByName('nom')[0];
+      if (nameInput) {
+        nameInput.value = namePart;
+      }
+    }
+  };
+
   // --- FONCTION DÉCLARATION DÉCÈS ---
   const handleDeathSubmit = async (e) => {
     e.preventDefault();
     setDeclarationLoading(true);
     const formData = new FormData(e.target);
     
+    // On nettoie la valeur du lien pour ne garder que le label (ex: "Protégé 1")
+    const fullLien = formData.get('lien');
+    const finalLien = fullLien.includes('|') ? fullLien.split('|')[1] : fullLien;
+
     try {
       await addDoc(collection(db, "declarations"), {
         defuntNom: formData.get('nom'),
-        lien: formData.get('lien'),
+        lien: finalLien,
         dateDeces: formData.get('date'),
         déclarantId: user.uid,
-        déclarantNom: userData?.name || user.email,
+        déclarantNom: userData?.displayName || userData?.name || user.email,
         status: "En attente",
         createdAt: serverTimestamp()
       });
@@ -67,7 +85,7 @@ const Dashboard = () => {
     </div>
   );
 
-  const displayName = userData?.name || user?.displayName || 'Membre';
+  const displayName = userData?.displayName || userData?.name || user?.displayName || 'Membre';
   const initial = displayName.charAt(0).toUpperCase();
   const status = userData?.status || "En attente";
 
@@ -108,14 +126,22 @@ const Dashboard = () => {
               <form onSubmit={handleDeathSubmit} className="space-y-4">
                 <div>
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">Nom complet du défunt</label>
-                  <input name="nom" required type="text" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-rose-500" />
+                  <input name="nom" required type="text" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-rose-500 font-bold" placeholder="S'affiche automatiquement" />
                 </div>
                 <div>
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">Lien de parenté</label>
-                  <select name="lien" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none">
-                    <option value="Membre">Moi-même (Membre)</option>
-                    <option value="Protégé 1">{userData?.protege1 || "Protégé 1"}</option>
-                    <option value="Protégé 2">{userData?.protege2 || "Protégé 2"}</option>
+                  <select name="lien" required onChange={handleSelectChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none font-bold text-slate-700">
+                    <option value="">Choisir...</option>
+                    <option value={`${displayName}|Membre`}>Moi-même (Membre)</option>
+                    
+                    {/* Mapping dynamique basé sur le tableau 'proteges' de Firestore */}
+                    {userData?.proteges && userData.proteges.map((protege, index) => (
+                      <option key={index} value={`${protege.nom}|Protégé ${index + 1}`}>
+                        (Protégé {index + 1})
+                      </option>
+                    ))}
+                    
+                    <option value="Autre">Autre bénéficiaire</option>
                   </select>
                 </div>
                 <div>
@@ -171,7 +197,7 @@ const Dashboard = () => {
 
           <div className="lg:col-span-2 space-y-6">
             
-            {/* --- NOUVELLE SECTION : BOUTON URGENCE --- */}
+            {/* --- BOUTON URGENCE --- */}
             <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }} onClick={() => setShowDeathForm(true)}
               className="w-full p-6 bg-rose-50 border-2 border-dashed border-rose-200 rounded-[2.5rem] flex items-center justify-between group cursor-pointer">
               <div className="flex items-center gap-4 text-left">
@@ -188,14 +214,16 @@ const Dashboard = () => {
               <h3 className="text-2xl font-black text-slate-900 mb-8">Ma Famille & Bénéficiaires</h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                <div className="p-6 rounded-2xl bg-slate-50 border border-slate-100">
-                  <p className="text-[10px] font-black text-blue-600 uppercase mb-2">Protégé 1</p>
-                  <p className="font-bold text-slate-800">{userData?.protege1 || "Non défini"}</p>
-                </div>
-                <div className="p-6 rounded-2xl bg-slate-50 border border-slate-100">
-                  <p className="text-[10px] font-black text-blue-600 uppercase mb-2">Protégé 2</p>
-                  <p className="font-bold text-slate-800">{userData?.protege2 || "Non défini"}</p>
-                </div>
+                {userData?.proteges && userData.proteges.map((protege, i) => (
+                  <div key={i} className="p-6 rounded-2xl bg-slate-50 border border-slate-100">
+                    <p className="text-[10px] font-black text-blue-600 uppercase mb-2">Protégé {i + 1}</p>
+                    <p className="font-bold text-slate-800">{protege.nom || "Non défini"}</p>
+                    <p className="text-[10px] text-slate-400 italic">Statut: {protege.status || 'Actif'}</p>
+                  </div>
+                ))}
+                {(!userData?.proteges || userData.proteges.length === 0) && (
+                   <p className="text-slate-400 text-sm italic">Aucun protégé enregistré.</p>
+                )}
               </div>
 
               <div className="space-y-4">
@@ -220,7 +248,6 @@ const Dashboard = () => {
           </div>
 
           <div className="space-y-6">
-            {/* --- NOUVELLE SECTION : NOTIFICATIONS --- */}
             <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-lg">
               <div className="flex items-center gap-2 mb-6">
                 <Bell size={20} className="text-blue-600" />
@@ -231,7 +258,6 @@ const Dashboard = () => {
                   <p className="text-xs font-bold text-blue-800 mb-1">Cotisation Exceptionnelle</p>
                   <p className="text-[10px] text-blue-600 leading-relaxed">L'admin a lancé une cotisation de 2000 FCFA pour le membre X.</p>
                 </div>
-                {/* On pourra mapper ici les notifications réelles de Firestore plus tard */}
               </div>
             </div>
 
