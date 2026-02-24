@@ -6,7 +6,7 @@ import { functions } from '../firebase';
 import { X, ShieldCheck } from 'lucide-react';
 
 // Remplace par ta clé publique Stripe (pk_test_...)
-const stripePromise = loadStripe('TON_CLE_PUBLIQUE_STRIPE');
+const stripePromise = loadStripe('pk_test_51T17ReIImwaKuwtjOtgouWGzsbeCpiIiWHL98WKatEkUTdrr2K10dQcLVCJ2YvB1iX0qqlV9xRnhTXHUigx52wvO00g9jmgu4J');
 
 const CheckoutForm = ({ amount, onSuccess, onClose }) => {
   const stripe = useStripe();
