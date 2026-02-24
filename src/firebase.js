@@ -3,7 +3,7 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth"; 
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
-import { getFunctions } from "firebase/functions"; // <--- AJOUT : Service pour Stripe
+import { getFunctions } from "firebase/functions"; 
 
 const firebaseConfig = {
   apiKey: "AIzaSyBMvMCaDUC-QNzlXN5VFXvVO6pKR5F942g",
@@ -22,6 +22,11 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
-export const functions = getFunctions(app); // <--- AJOUT : Exportation pour Stripe
+
+/**
+ * MODIFICATION : Précision de la région 'us-central1'
+ * Cela doit correspondre à la région définie dans ton functions/index.js
+ */
+export const functions = getFunctions(app, 'us-central1'); 
 
 export default app;

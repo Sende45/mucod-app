@@ -1,13 +1,13 @@
 // functions/index.js
-const { onCall, onRequest } = require("firebase-functions/v2/https");
-const { setGlobalOptions } = require("firebase-functions/v2"); // Ajouté pour la région
+const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https"); // MODIF : Ajout de HttpsError
+const { setGlobalOptions } = require("firebase-functions/v2");
 const { defineSecret } = require("firebase-functions/params");
 const admin = require("firebase-admin");
 
 admin.initializeApp();
 
 /**
- * On force la région sur us-central1 (ou europe-west1 si tu veux changer) 
+ * On force la région sur us-central1
  * et on s'assure que les fonctions utilisent Node 24
  */
 setGlobalOptions({ 
@@ -20,14 +20,21 @@ const stripeSecret = defineSecret("STRIPE_SECRET");
 const stripeWebhook = defineSecret("STRIPE_WEBHOOK");
 
 exports.createStripePayment = onCall({ secrets: [stripeSecret] }, async (request) => {
-  // Dans la v2, les données sont dans request.data et l'auth dans request.auth
-  const { amount, currency = "eur" } = request.data;
+  // MODIFICATION : Devise par défaut réglée sur "xof" (FCFA)
+  const { amount, currency = "xof" } = request.data;
   
   if (!request.auth) {
-    throw new Error("unauthenticated");
+    // MODIF : Utilisation de HttpsError pour éviter l'erreur INTERNAL floue
+    throw new HttpsError("unauthenticated", "L'utilisateur doit être connecté.");
   }
 
-  const stripe = require("stripe")(stripeSecret.value());
+  // MODIF : On vérifie que le secret est bien chargé avant d'initialiser Stripe
+  const secretValue = stripeSecret.value();
+  if (!secretValue) {
+    throw new HttpsError("internal", "Le secret STRIPE_SECRET est introuvable.");
+  }
+
+  const stripe = require("stripe")(secretValue);
 
   try {
     const paymentIntent = await stripe.paymentIntents.create({
@@ -43,7 +50,8 @@ exports.createStripePayment = onCall({ secrets: [stripeSecret] }, async (request
     return { clientSecret: paymentIntent.client_secret };
   } catch (error) {
     console.error("Erreur Stripe:", error);
-    throw new Error(error.message);
+    // MODIF : On renvoie l'erreur spécifique de Stripe au frontend
+    throw new HttpsError("internal", error.message);
   }
 });
 
@@ -53,7 +61,7 @@ exports.stripeWebhook = onRequest({ secrets: [stripeWebhook, stripeSecret] }, as
   let event;
 
   try {
-    // Note : req.rawBody est requis pour valider la signature Stripe
+    // Note : req.rawBody est indispensable pour la validation Stripe
     event = stripe.webhooks.constructEvent(req.rawBody, sig, stripeWebhook.value());
   } catch (err) {
     console.error(`Webhook Signature Error: ${err.message}`);
@@ -63,7 +71,10 @@ exports.stripeWebhook = onRequest({ secrets: [stripeWebhook, stripeSecret] }, as
   if (event.type === "payment_intent.succeeded") {
     const paymentIntent = event.data.object;
     const userId = paymentIntent.metadata.userId;
-    const amountPaid = paymentIntent.amount / 100;
+    
+    // Stripe travaille en centimes, mais le FCFA n'a pas de décimales.
+    // Pour le XOF, 1000 dans Stripe = 1000 FCFA.
+    const amountPaid = paymentIntent.amount; 
 
     const userRef = admin.firestore().collection("users").doc(userId);
     
