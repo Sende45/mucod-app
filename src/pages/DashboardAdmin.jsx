@@ -1,15 +1,17 @@
 // src/pages/DashboardAdmin.jsx
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { db, functions } from '../firebase'; // Import de functions ajouté
-import { collection, onSnapshot, query, orderBy, doc, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
-import { httpsCallable } from 'firebase/functions'; // Import pour appeler le backend
+import { db, functions } from '../firebase';
+// AJOUT : deleteDoc ajouté aux imports
+import { collection, onSnapshot, query, orderBy, doc, updateDoc, addDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
 import { 
   Users, Wallet, Search, MoreVertical, 
   CheckCircle, Download, Loader2, Clock, Phone, Eye,
-  AlertCircle, MessageSquare, X, ShieldCheck, Star, Briefcase, Edit2, CreditCard
+  AlertCircle, MessageSquare, X, ShieldCheck, Star, Briefcase, Edit2, CreditCard,
+  Trash2, Archive // AJOUT : Nouvelles icônes
 } from 'lucide-react';
-import PaymentModal from '../components/PaymentModal'; // Import du nouveau composant
+import PaymentModal from '../components/PaymentModal';
 
 const DashboardAdmin = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -20,7 +22,6 @@ const DashboardAdmin = () => {
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   
-  // Nouveaux états pour Stripe
   const [payTargetUser, setPayTargetUser] = useState(null); 
   const [isPayModalOpen, setIsPayModalOpen] = useState(false);
 
@@ -42,7 +43,27 @@ const DashboardAdmin = () => {
     return () => { unsubUsers(); unsubDeces(); };
   }, []);
 
-  // --- ACTIONS EXISTANTES ---
+  // --- NOUVELLES ACTIONS (SUPPRESSION & ARCHIVAGE) ---
+  const handleDeleteUser = async (userId) => {
+    if (window.confirm("⚠️ Voulez-vous vraiment supprimer définitivement cet adhérent ?")) {
+      try {
+        await deleteDoc(doc(db, "users", userId));
+      } catch (error) {
+        alert("Erreur lors de la suppression.");
+      }
+    }
+  };
+
+  const handleToggleArchive = async (user) => {
+    const newStatus = user.status === "Archivé" ? "À jour" : "Archivé";
+    try {
+      await updateDoc(doc(db, "users", user.id), { status: newStatus });
+    } catch (error) {
+      alert("Erreur de modification du statut.");
+    }
+  };
+
+  // --- ACTIONS EXISTANTES (CONSERVÉES) ---
   const handleAddUser = async (e) => {
     e.preventDefault();
     const f = new FormData(e.target);
@@ -118,11 +139,11 @@ const DashboardAdmin = () => {
   return (
     <div className="min-h-screen bg-slate-50 flex">
       
-      {/* --- MODAL PAIEMENT STRIPE (NOUVEAU) --- */}
+      {/* --- MODAL PAIEMENT STRIPE --- */}
       {payTargetUser && (
         <PaymentModal 
           isOpen={isPayModalOpen}
-          amount={2000} // Montant fixe de cotisation par exemple
+          amount={2000}
           onClose={() => { setIsPayModalOpen(false); setPayTargetUser(null); }}
           onSuccess={() => {
             setIsPayModalOpen(false);
@@ -284,24 +305,17 @@ const DashboardAdmin = () => {
                           </div>
                         </td>
                         <td className="px-8 py-6">
-                          <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${m.status === 'À jour' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{m.status}</span>
+                          <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${m.status === 'À jour' ? 'bg-emerald-100 text-emerald-700' : m.status === 'Archivé' ? 'bg-slate-200 text-slate-600' : 'bg-amber-100 text-amber-700'}`}>{m.status}</span>
                         </td>
                         <td className="px-8 py-6 text-right">
                           <div className="flex justify-end gap-2">
-                            {/* NOUVEAU BOUTON : PAIEMENT */}
-                            <button 
-                              onClick={() => { setPayTargetUser(m); setIsPayModalOpen(true); }}
-                              className="p-2 bg-emerald-50 hover:bg-emerald-600 hover:text-white rounded-xl transition-all text-emerald-600 cursor-pointer"
-                              title="Encaisser cotisation"
-                            >
-                              <CreditCard size={16} />
-                            </button>
-
-                            {m.status !== 'À jour' && <button onClick={() => handleApprove(m.id)} className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-black hover:bg-slate-900 transition-all cursor-pointer">Valider</button>}
-                            
-                            <button onClick={() => setEditingUser(m)} className="p-2 bg-slate-100 hover:bg-blue-600 hover:text-white rounded-xl transition-all text-slate-500 cursor-pointer">
-                              <Edit2 size={16} />
-                            </button>
+                            <button onClick={() => { setPayTargetUser(m); setIsPayModalOpen(true); }} className="p-2 bg-emerald-50 hover:bg-emerald-600 hover:text-white rounded-xl transition-all text-emerald-600 cursor-pointer" title="Encaisser"><CreditCard size={16} /></button>
+                            {m.status !== 'À jour' && m.status !== 'Archivé' && <button onClick={() => handleApprove(m.id)} className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-black hover:bg-slate-900 transition-all cursor-pointer">Valider</button>}
+                            <button onClick={() => setEditingUser(m)} className="p-2 bg-slate-100 hover:bg-blue-600 hover:text-white rounded-xl transition-all text-slate-500 cursor-pointer"><Edit2 size={16} /></button>
+                            {/* BOUTON ARCHIVER */}
+                            <button onClick={() => handleToggleArchive(m)} className={`p-2 rounded-xl transition-all ${m.status === 'Archivé' ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-400 hover:bg-slate-900 hover:text-white'}`} title="Archiver/Réactiver"><Archive size={16} /></button>
+                            {/* BOUTON SUPPRIMER */}
+                            <button onClick={() => handleDeleteUser(m.id)} className="p-2 bg-rose-50 text-rose-500 hover:bg-rose-600 hover:text-white rounded-xl transition-all" title="Supprimer"><Trash2 size={16} /></button>
                           </div>
                         </td>
                       </tr>
