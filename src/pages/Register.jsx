@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { 
   Mail, Lock, User, ArrowRight, Check, 
-  ShieldCheck, Phone, Users, FileText, Upload 
+  ShieldCheck, Phone, Users, FileText, Upload, Eye, EyeOff 
 } from 'lucide-react';
 
 const Register = () => {
@@ -21,6 +21,7 @@ const Register = () => {
   });
   
   const [isFocused, setIsFocused] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -93,7 +94,9 @@ const Register = () => {
             {/* Sidebar gauche (Desktop) */}
             <div className="hidden md:flex md:col-span-4 bg-slate-900 p-10 flex-col justify-between text-white relative overflow-hidden">
               <div className="relative z-10">
-                <ShieldCheck className="text-blue-400 mb-6" size={40} />
+                <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center mb-8 shadow-lg shadow-blue-500/20">
+                    <ShieldCheck size={28} />
+                </div>
                 <h2 className="text-2xl font-bold leading-tight mb-4">Adhésion à la MUCOD.</h2>
                 <p className="text-slate-400 text-sm leading-relaxed italic mb-8">
                   "S'unir pour mieux se soutenir."
@@ -245,11 +248,19 @@ const Register = () => {
                   <div className={`relative transition-all duration-300 ${isFocused === 'password' ? 'scale-[1.02]' : ''}`}>
                     <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${isFocused === 'password' ? 'text-blue-600' : 'text-slate-400'}`} size={18} />
                     <input 
-                      type="password" required placeholder="Mot de passe"
+                      type={showPassword ? "text" : "password"}
+                      required placeholder="Mot de passe"
                       onFocus={() => setIsFocused('password')} onBlur={() => setIsFocused(null)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-12 pr-6 py-4 focus:outline-none focus:border-blue-500 focus:bg-white transition-all font-medium text-slate-700"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-12 pr-12 py-4 focus:outline-none focus:border-blue-500 focus:bg-white transition-all font-medium text-slate-700"
                       onChange={(e) => setFormData({...formData, password: e.target.value})}
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors"
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
                   </div>
                   
                   <AnimatePresence>
