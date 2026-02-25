@@ -22,8 +22,8 @@ const Contact = () => {
     e.preventDefault();
     setIsSending(true);
 
-    // Identifiants complets configurés
-    const SERVICE_ID = "service_kb8ckvr"; 
+    // --- MODIFICATION ICI : Mise à jour du SERVICE_ID ---
+    const SERVICE_ID = "service_f8258dd"; 
     const TEMPLATE_ID = "template_82eungf"; 
     const PUBLIC_KEY = "xX6MHYJpo5d9EY7MK"; 
 
@@ -36,7 +36,7 @@ const Contact = () => {
         setTimeout(() => setIsSent(false), 5000);
       }, (error) => {
         console.error("Erreur EmailJS:", error.text);
-        alert("Une erreur est survenue lors de l'envoi.");
+        alert("Une erreur est survenue lors de l'envoi. Vérifiez la configuration EmailJS.");
         setIsSending(false);
       });
   };
